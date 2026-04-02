@@ -97,45 +97,131 @@ public class LxdCommandView extends CommandViewBase {
                 .readStdoutOrThrow();
     }
 
-    public void start(String projectName, String containerName) throws Exception {
-        build(commandBuilder -> commandBuilder
-                        .add("start")
-                        .addQuoted(containerName)
-                        .add("--project")
-                        .addQuoted(projectName))
-                .execute();
+    public Project project(String project) {
+        return new Project(project);
     }
 
-    public void stop(String projectName, String containerName) throws Exception {
-        build(commandBuilder -> commandBuilder
-                        .add("stop")
-                        .addQuoted(containerName)
-                        .add("--project")
-                        .addQuoted(projectName))
-                .execute();
-    }
+    public class Project extends CommandView {
 
-    public void pause(String projectName, String containerName) throws Exception {
-        build(commandBuilder -> commandBuilder
-                        .add("pause")
-                        .addQuoted(containerName)
-                        .add("--project")
-                        .addQuoted(projectName))
-                .execute();
-    }
+        private final String project;
 
-    public CommandControl console(String projectName, String containerName) {
-        return build(commandBuilder -> commandBuilder
-                .add("--project")
-                .addQuoted(projectName)
-                .add("console").addQuoted(containerName));
-    }
+        public Project(String project) {
+            this.project = project;
+        }
 
-    public CommandControl configEdit(String projectName, String containerName) {
-        return build(commandBuilder -> commandBuilder
-                .add("--project")
-                .addQuoted(projectName)
-                .add("config", "edit").addQuoted(containerName));
+        @Override
+        protected CommandControl build(Consumer<CommandBuilder> builder) {
+            var cmd = CommandBuilder.of().add("lxc").add("--project", project != null ? project : "default");
+            builder.accept(cmd);
+            return shellControl
+                    .command(cmd)
+                    .withErrorFormatter(LxdCommandView::formatErrorMessage)
+                    .withExceptionConverter(LxdCommandView::convertException)
+                    .elevated(requiresElevation());
+        }
+
+        @Override
+        protected ShellControl getShellControl() {
+            return LxdCommandView.this.getShellControl();
+        }
+
+        @Override
+        public Project start() throws Exception {
+            shellControl.start();
+            return this;
+        }
+
+
+        public void start(String containerName) throws Exception {
+            build(commandBuilder -> commandBuilder
+                    .add("start")
+                    .addQuoted(containerName))
+                    .execute();
+        }
+
+        public void stop(String containerName) throws Exception {
+            build(commandBuilder -> commandBuilder
+                    .add("stop")
+                    .addQuoted(containerName))
+                    .execute();
+        }
+
+        public void pause(String containerName) throws Exception {
+            build(commandBuilder -> commandBuilder
+                    .add("pause")
+                    .addQuoted(containerName))
+                    .execute();
+        }
+
+        public CommandControl console(String containerName) {
+            return build(commandBuilder -> commandBuilder
+                    .add("console").addQuoted(containerName));
+        }
+
+        public CommandControl configEdit(String containerName) {
+            return build(commandBuilder -> commandBuilder
+                    .add("config", "edit").addQuoted(containerName));
+        }
+
+
+
+        public Optional<ContainerEntry> queryContainerState(String containerName) throws Exception {
+            var l = listContainers();
+            var found = l.stream()
+                    .filter(containerEntry -> (containerEntry.getProject().equals(project)
+                            || project == null
+                            && containerEntry.getProject().equals("default"))
+                            && containerEntry.getName().equals(containerName))
+                    .findFirst();
+            return found;
+        }
+
+
+        public ShellControl exec(String container, String user, Supplier<Boolean> busybox) {
+            var sub = shellControl.subShell();
+            sub.setDumbOpen(createOpenFunction(container, user, false, busybox));
+            sub.setTerminalOpen(createOpenFunction(container, user, true, busybox));
+            return sub.withExceptionConverter(LxdCommandView::convertException).elevated(requiresElevation());
+        }
+
+        private ShellOpenFunction createOpenFunction(String containerName, String user, boolean terminal, Supplier<Boolean> busybox) {
+            return new ShellOpenFunction() {
+                @Override
+                public CommandBuilder prepareWithoutInitCommand() {
+                    var b = execCommand(containerName, terminal).add("su", "-l");
+                    if (user != null) {
+                        b.addQuoted(user);
+                    }
+                    return b;
+                }
+
+                @Override
+                public CommandBuilder prepareWithInitCommand(@NonNull String command) {
+                    var b = execCommand(containerName, terminal).add("su", "-l");
+                    if (user != null) {
+                        b.addQuoted(user);
+                    }
+                    return b.add(sc -> {
+                                var suType = busybox.get();
+                                if (suType) {
+                                    return "-c";
+                                } else {
+                                    return "--session-command";
+                                }
+                            })
+                            .addLiteral(command);
+                }
+            };
+        }
+
+        private CommandBuilder execCommand(String containerName, boolean terminal) {
+            var c = CommandBuilder.of()
+                    .add("lxc")
+                    .add("--project", project != null ? project : "default")
+                    .add("exec", terminal ? "-t" : "-T");
+            return c.addQuoted(containerName)
+                    .add("--");
+        }
     }
 
     public List<DataStoreEntryRef<LxdContainerStore>> listContainers(DataStoreEntryRef<LxdCmdStore> store)
@@ -156,17 +242,6 @@ public class LxdCommandView extends CommandViewBase {
                 })
                 .flatMap(Optional::stream)
                 .toList();
-    }
-
-    public Optional<ContainerEntry> queryContainerState(String projectName, String containerName) throws Exception {
-        var l = listContainers();
-        var found = l.stream()
-                .filter(containerEntry -> (containerEntry.getProject().equals(projectName)
-                                || projectName == null
-                                        && containerEntry.getProject().equals("default"))
-                        && containerEntry.getName().equals(containerName))
-                .findFirst();
-        return found;
     }
 
     @Value
@@ -224,51 +299,5 @@ public class LxdCommandView extends CommandViewBase {
             }
             return l;
         }
-    }
-
-    public ShellControl exec(String projectName, String container, String user, Supplier<Boolean> busybox) {
-        var sub = shellControl.subShell();
-        sub.setDumbOpen(createOpenFunction(projectName, container, user, false, busybox));
-        sub.setTerminalOpen(createOpenFunction(projectName, container, user, true, busybox));
-        return sub.withExceptionConverter(LxdCommandView::convertException).elevated(requiresElevation());
-    }
-
-    private ShellOpenFunction createOpenFunction(
-            String projectName, String containerName, String user, boolean terminal, Supplier<Boolean> busybox) {
-        return new ShellOpenFunction() {
-            @Override
-            public CommandBuilder prepareWithoutInitCommand() {
-                var b = execCommand(projectName, containerName, terminal).add("su", "-l");
-                if (user != null) {
-                    b.addQuoted(user);
-                }
-                return b;
-            }
-
-            @Override
-            public CommandBuilder prepareWithInitCommand(@NonNull String command) {
-                var b = execCommand(projectName, containerName, terminal).add("su", "-l");
-                if (user != null) {
-                    b.addQuoted(user);
-                }
-                return b.add(sc -> {
-                            var suType = busybox.get();
-                            if (suType) {
-                                return "-c";
-                            } else {
-                                return "--session-command";
-                            }
-                        })
-                        .addLiteral(command);
-            }
-        };
-    }
-
-    public CommandBuilder execCommand(String projectName, String containerName, boolean terminal) {
-        var c = CommandBuilder.of().add("lxc", "exec", terminal ? "-t" : "-T");
-        return c.addQuoted(containerName)
-                .add("--project")
-                .addQuoted(projectName)
-                .add("--");
     }
 }

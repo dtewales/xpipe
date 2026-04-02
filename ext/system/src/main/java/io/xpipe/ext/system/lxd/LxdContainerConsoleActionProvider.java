@@ -52,12 +52,11 @@ public class LxdContainerConsoleActionProvider implements HubLeafProvider<LxdCon
         @Override
         public void executeImpl() throws Exception {
             var d = ref.getStore();
-            var view = new LxdCommandView(
-                    d.getCmd().getStore().getHost().getStore().getOrStartSession());
+            var view = d.view();
             TerminalLaunch.builder()
                     .entry(ref.get())
                     .title("Console")
-                    .command(view.console(d.getProjectName(), d.getName()))
+                    .command(view.console(d.getName()))
                     .launch();
         }
     }

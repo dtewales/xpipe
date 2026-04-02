@@ -52,12 +52,11 @@ public class LxdContainerEditConfigActionProvider implements HubLeafProvider<Lxd
         @Override
         public void executeImpl() throws Exception {
             var d = ref.getStore();
-            var view = new LxdCommandView(
-                    d.getCmd().getStore().getHost().getStore().getOrStartSession());
+            var view = d.view();
             TerminalLaunch.builder()
                     .entry(ref.get())
                     .title("Config")
-                    .command(view.configEdit(d.getProjectName(), d.getName()))
+                    .command(view.configEdit(d.getName()))
                     .launch();
         }
 

@@ -44,6 +44,14 @@ public class LxdContainerStore
     String containerName;
     IdentityValue identity;
 
+    public LxdCommandView.Project view() throws Exception {
+        return view(getCmd().getStore().getHost().getStore().getOrStartSession());
+    }
+
+    public LxdCommandView.Project view(ShellControl sc) {
+        return new LxdCommandView(sc).project(projectName);
+    }
+
     @Override
     public List<DataStoreEntryRef<?>> getDependencies() {
         return DataStoreDependencies.of(cmd, identity != null ? identity.getDependencies() : null);
@@ -89,10 +97,10 @@ public class LxdContainerStore
 
             @Override
             public ShellControl control(ShellControl parent) throws Exception {
-                refreshContainerState(getCmd().getStore().getHost().getStore().getOrStartSession());
+                refreshContainerState();
 
                 var user = identity != null ? identity.unwrap().getUsername().retrieveUsername() : null;
-                var sc = new LxdCommandView(parent).exec(projectName, containerName, user, () -> {
+                var sc = view(parent).exec(containerName, user, () -> {
                     var state = getState();
                     var alpine = state.getOsName() != null
                             && state.getOsName().toLowerCase().contains("alpine");
@@ -127,10 +135,10 @@ public class LxdContainerStore
         };
     }
 
-    private void refreshContainerState(ShellControl sc) throws Exception {
+    private void refreshContainerState() throws Exception {
         var state = getState();
-        var view = new LxdCommandView(sc);
-        var displayState = view.queryContainerState(projectName, containerName);
+        var view = view();
+        var displayState = view.queryContainerState(containerName);
         if (displayState.isEmpty()) {
             return;
         }
@@ -147,27 +155,24 @@ public class LxdContainerStore
 
     @Override
     public void start() throws Exception {
-        var sc = getCmd().getStore().getHost().getStore().getOrStartSession();
-        var view = new LxdCommandView(sc);
-        view.start(projectName, containerName);
-        refreshContainerState(sc);
+        var view = view();
+        view.start(containerName);
+        refreshContainerState();
     }
 
     @Override
     public void stop() throws Exception {
         stopSessionIfNeeded();
-        var sc = getCmd().getStore().getHost().getStore().getOrStartSession();
-        var view = new LxdCommandView(sc);
-        view.stop(projectName, containerName);
-        refreshContainerState(sc);
+        var view = view();
+        view.stop(containerName);
+        refreshContainerState();
     }
 
     @Override
     public void pause() throws Exception {
-        var sc = getCmd().getStore().getHost().getStore().getOrStartSession();
-        var view = new LxdCommandView(sc);
-        view.pause(projectName, containerName);
-        refreshContainerState(sc);
+        var view = view();
+        view.pause(containerName);
+        refreshContainerState();
     }
 
     @Override
@@ -183,7 +188,7 @@ public class LxdContainerStore
 
     @Override
     public void refreshHostAddressOrThrow() throws Exception {
-        refreshContainerState(getCmd().getStore().getHost().getStore().getOrStartSession());
+        refreshContainerState();
     }
 
     @Override
