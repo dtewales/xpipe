@@ -83,7 +83,7 @@ public enum PlatformState {
         if (AppPrefs.get() != null && AppPrefs.get().canSaveLocal() &&
                 !AppPrefs.get().disableHardwareAcceleration().get() && l.stream().anyMatch(msg::contains)) {
             teardown();
-            AppPrefs.get().setFromExternal(AppPrefs.get().disableHardwareAcceleration(), true);
+            AppPrefs.get().disableHardwareAcceleration().set(true);
             AppPrefs.get().save();
             AppRestart.restart();
         }

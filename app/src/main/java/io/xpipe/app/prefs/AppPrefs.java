@@ -484,7 +484,7 @@ public final class AppPrefs {
         return notesTemplate;
     }
 
-    public ObservableBooleanValue disableHardwareAcceleration() {
+    public BooleanProperty disableHardwareAcceleration() {
         return disableHardwareAcceleration;
     }
 
