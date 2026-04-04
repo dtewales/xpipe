@@ -178,13 +178,6 @@ public abstract class DataStorage {
             allScripts.get().setParentCategory(null);
         }
 
-        if (getStoreCategoryIfPresent(PREDEFINED_SCRIPTS_CATEGORY_UUID).isEmpty()) {
-            var cat =
-                    DataStoreCategory.createNew(ALL_SCRIPTS_CATEGORY_UUID, PREDEFINED_SCRIPTS_CATEGORY_UUID, "Samples");
-            cat.setDirectory(categoriesDir.resolve(PREDEFINED_SCRIPTS_CATEGORY_UUID.toString()));
-            storeCategories.add(cat);
-        }
-
         if (getStoreCategoryIfPresent(CUSTOM_SCRIPTS_CATEGORY_UUID).isEmpty()) {
             var cat = DataStoreCategory.createNew(ALL_SCRIPTS_CATEGORY_UUID, CUSTOM_SCRIPTS_CATEGORY_UUID, "Custom");
             cat.setDirectory(categoriesDir.resolve(CUSTOM_SCRIPTS_CATEGORY_UUID.toString()));
@@ -1048,7 +1041,6 @@ public abstract class DataStorage {
         }
 
         if (cat.getUuid().equals(DEFAULT_CATEGORY_UUID)
-                || cat.getUuid().equals(PREDEFINED_SCRIPTS_CATEGORY_UUID)
                 || cat.getUuid().equals(LOCAL_IDENTITIES_CATEGORY_UUID)
                 || cat.getUuid().equals(CUSTOM_SCRIPTS_CATEGORY_UUID)
                 || cat.getUuid().equals(SYNCED_IDENTITIES_CATEGORY_UUID)

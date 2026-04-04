@@ -3,6 +3,7 @@ package io.xpipe.ext.base.script;
 import io.xpipe.app.core.AppProperties;
 import io.xpipe.app.ext.DataStorageExtensionProvider;
 import io.xpipe.app.storage.DataStorage;
+import io.xpipe.app.storage.DataStoreCategory;
 import io.xpipe.app.storage.DataStoreEntry;
 
 public class ScriptDataStorageProvider extends DataStorageExtensionProvider {
@@ -29,6 +30,9 @@ public class ScriptDataStorageProvider extends DataStorageExtensionProvider {
         if (AppProperties.get().isTest()) {
             return;
         }
+
+        var cat = DataStoreCategory.createNew(DataStorage.ALL_SCRIPTS_CATEGORY_UUID, DataStorage.PREDEFINED_SCRIPTS_CATEGORY_UUID, "Samples");
+        DataStorage.get().addStoreCategory(cat);
 
         for (PredefinedScriptStore value : PredefinedScriptStore.values()) {
             var previous = DataStorage.get().getStoreEntryIfPresent(value.getUuid());
