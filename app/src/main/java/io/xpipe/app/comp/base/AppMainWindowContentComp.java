@@ -90,6 +90,8 @@ public class AppMainWindowContentComp extends SimpleRegionBuilder {
                 loadingIcon.setImage(AppImages.loadImage(image));
             });
 
+            loadingIcon.visibleProperty().bind(Bindings.isEmpty(AppDialog.getModalOverlays()));
+
             var version = new LabelComp(
                     (AppNames.ofCurrent().getName()) + " " + AppProperties.get().getVersion());
             version.apply(struc -> {

@@ -182,6 +182,11 @@ def getJvmArgs() {
         jvmRunArgs += ["-Dprism.order=mtl,es2,sw"]
     }
 
+    // Use new metal pipeline on macOS
+    if (os.isLinux()) {
+        jvmRunArgs += ["-Dquantum.multithreaded=false"]
+    }
+
     if (os.isLinux()) {
         jvmRunArgs.addAll("--add-opens", "java.desktop/sun.awt.X11=" + packageName(null))
     }
