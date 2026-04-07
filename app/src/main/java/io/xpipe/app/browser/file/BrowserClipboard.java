@@ -66,7 +66,6 @@ public class BrowserClipboard {
         });
     }
 
-    @SneakyThrows
     public static ClipboardContent startDrag(
             FileEntry base, List<BrowserEntry> selected, BrowserFileTransferMode mode) {
         if (selected.isEmpty()) {
@@ -80,15 +79,13 @@ public class BrowserClipboard {
         return content;
     }
 
-    @SneakyThrows
     public static void startCopy(FileEntry base, List<BrowserEntry> selected) {
-        if (selected.isEmpty()) {
-            currentCopyClipboard.setValue(null);
-            return;
-        }
-
         var id = UUID.randomUUID();
         currentCopyClipboard.setValue(new Instance(id, base, new ArrayList<>(selected), BrowserFileTransferMode.COPY));
+    }
+
+    public static void clear() {
+        currentCopyClipboard.setValue(null);
     }
 
     public static Instance retrieveCopy() {

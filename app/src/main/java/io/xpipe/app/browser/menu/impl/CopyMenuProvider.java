@@ -19,7 +19,12 @@ public class CopyMenuProvider implements BrowserMenuLeafProvider {
 
     @Override
     public void execute(BrowserFileSystemTabModel model, List<BrowserEntry> entries) {
-        BrowserClipboard.startCopy(model.getTargetDirectory(entries.getFirst()), entries);
+        // This action can still be called by manually registered shortcuts with an empty selection
+        if (!entries.isEmpty()) {
+            BrowserClipboard.startCopy(model.getTargetDirectory(entries.getFirst()), entries);
+        } else {
+            BrowserClipboard.clear();
+        }
     }
 
     @Override

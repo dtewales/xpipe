@@ -127,7 +127,7 @@ public class StoreFilterState {
     }
 
     public void set(String s) {
-        rawText.setValue(s);
+        fieldText.setValue(s);
     }
 
     public void putFilter(String s) {
