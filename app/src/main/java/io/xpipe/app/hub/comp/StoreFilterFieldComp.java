@@ -106,7 +106,7 @@ public class StoreFilterFieldComp extends SimpleRegionBuilder {
                             return null;
                         },
                         field.focusedProperty(),
-                        state.getRawText()));
+                        state.getFieldText()));
         RegionDescriptor.builder().nameKey("search").showTooltips(false).build().apply(field);
 
         field.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
@@ -123,7 +123,7 @@ public class StoreFilterFieldComp extends SimpleRegionBuilder {
             }
         });
 
-        state.getRawText().subscribe(val -> {
+        state.getFieldText().subscribe(val -> {
             PlatformThread.runLaterIfNeeded(() -> {
                 var wasFocused = field.isFocused();
                 if (!wasFocused) {
@@ -141,7 +141,7 @@ public class StoreFilterFieldComp extends SimpleRegionBuilder {
         });
 
         field.textProperty().addListener((observable, oldValue, n) -> {
-            state.getRawText().setValue(n != null && n.length() > 0 ? n : null);
+            state.getFieldText().setValue(n != null && n.length() > 0 ? n : null);
         });
 
         // Fix caret not being visible on right side when overflowing

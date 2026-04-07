@@ -6,11 +6,10 @@ import io.xpipe.app.core.AppCache;
 import io.xpipe.app.issue.ErrorEventFactory;
 import io.xpipe.app.platform.DerivedObservableList;
 
+import io.xpipe.app.util.GlobalTimer;
+import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
+import javafx.beans.property.*;
 import javafx.beans.value.ObservableBooleanValue;
 import javafx.beans.value.ObservableValue;
 
@@ -19,6 +18,8 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
 import lombok.Getter;
 
 import java.net.URI;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 
 public class StoreFilterState {
@@ -31,6 +32,8 @@ public class StoreFilterState {
             DerivedObservableList.synchronizedArrayList(true);
 
     @Getter
+    private final StringProperty fieldText = new SimpleStringProperty();
+
     private final StringProperty rawText = new SimpleStringProperty();
 
     @Getter
@@ -63,7 +66,6 @@ public class StoreFilterState {
     private final ObservableBooleanValue isSearchString = Bindings.createBooleanBinding(
             () -> {
                 return rawText.getValue() != null
-                        && (forceFilter.getValue() || rawText.getValue().length() > 2)
                         && (forceFilter.getValue() || (!isUrlString.getValue() && !isQuickConnectString.getValue()));
             },
             rawText,
@@ -95,8 +97,26 @@ public class StoreFilterState {
         INSTANCE.recentSearches.setContent(recentSearches);
         INSTANCE.recentQuickConnections.setContent(recentQuickConnections);
 
-        INSTANCE.rawText.subscribe(ignored -> {
-            INSTANCE.forceFilter.set(false);
+        INSTANCE.addListeners();
+    }
+
+    private void addListeners() {
+        var updateCount = new SimpleIntegerProperty(0);
+        fieldText.subscribe(ignored -> {
+            forceFilter.set(false);
+
+            var index = updateCount.getValue() + 1;
+            updateCount.setValue(index);
+
+            GlobalTimer.delay(() -> {
+                if (index != updateCount.get()) {
+                    return;
+                }
+
+                Platform.runLater(() -> {
+                    rawText.setValue(fieldText.getValue());
+                });
+            }, Duration.ofMillis(300));
         });
     }
 
