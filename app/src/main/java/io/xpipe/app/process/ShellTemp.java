@@ -85,11 +85,12 @@ public class ShellTemp {
                                     "{$_.Name.StartsWith(\"" + prefix.getFileName() + "\")}",
                                     "|",
                                     "Remove-Item",
+                                    "-Recurse",
                                     "-Force"))
                     .executeAndCheck();
         } else {
             sc.command(CommandBuilder.of()
-                            .add("rm", "-f")
+                            .add("rm", "-rf")
                             .add("\"" + prefix.toString() + "\"*")
                             .add("2>/dev/null"))
                     .executeAndCheck();
